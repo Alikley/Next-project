@@ -1,5 +1,5 @@
 "use client"
-import React, { ChangeEvent } from 'react'
+import React, { ChangeEvent, useState } from 'react'
 import { 
   Form,
   FormControl,
@@ -17,10 +17,15 @@ import * as z from "zod"
 import { Button } from '../ui/button';
 import Image from 'next/image';
 import { Textarea } from '../ui/textarea';
+import { isBase64Image } from '@/lib/utils';
+import { useUploadThing } from '@/lib/uploadthing';
+import { updateUser } from '@/lib/actions/user.action';
+import { usePathname,useRouter } from 'next/navigation';
 interface Props{
     user:{
         id:string;
-        object:string;
+        objectId:string;
+        username:string;
         name:string;
         bio:string;
         image:string
@@ -30,25 +35,70 @@ interface Props{
 
 function AccountProfile({user,bthTitle}: Props) {
 
+  const [files, setFiles] = useState<File[]>([])
+  const {startUpload} = useUploadThing("media");
+  const router = useRouter();
+  const pathname = usePathname();
+
+
   const form = useForm({
     resolver:zodResolver(UserValidation),
     defaultValues:{
-      profile_photo:"",
-      name:"",
-      username:"",
-      bio:""
+      profile_photo:user?.image || "",
+      name:user?.name || "",
+      username:user?.username || "",
+      bio:user?.bio || ""
     }
   });
 
 
-  const handleImage = (e:ChangeEvent,fieldChange: (value:string) => void) => {
-    e.preventDefault();
-  }
 
-  function onSubmit(values: z.infer<typeof UserValidation>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values)
+  const handleImage = (e:ChangeEvent<HTMLInputElement>,fieldChange: (value:string) => void) => {
+    e.preventDefault();
+
+    const fileReader = new FileReader();
+
+    if(e.target.files  && e.target.files.length > 0){
+      const file = e.target.files[0];
+      setFiles(Array.from(e.target.files))
+
+      if(!file.type.includes('image')) return;
+
+      fileReader.onload = async (event) => {
+        const imgDataUl = event.target?.result?.toString() || "";
+
+        fieldChange(imgDataUl)
+      }
+      fileReader.readAsDataURL(file)
+    }
+  }
+    const onSubmit = async (values: z.infer<typeof UserValidation>) => {
+      const blob = values.profile_photo;
+  
+      const hasImageChanged = isBase64Image(blob);
+      if (hasImageChanged) {
+        const imgRes = await startUpload(files);
+  
+        if (imgRes && imgRes[0].url) {
+          values.profile_photo = imgRes[0].url;
+        }
+      }
+
+      await updateUser({
+        name: values.name,
+        path: pathname,
+        username: values.username,
+        userId: user.id,
+        bio: values.bio,
+        image: values.profile_photo,
+      });
+
+      if(pathname === '/profile/edit'){
+        router.back();
+      }else{
+        router.push("/");
+      }
+      
   }
 
   return (
@@ -164,3 +214,9 @@ function AccountProfile({user,bthTitle}: Props) {
 }
 
 export default AccountProfile
+
+
+
+
+
+AccountProfile
