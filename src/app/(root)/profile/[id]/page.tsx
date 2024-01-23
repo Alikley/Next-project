@@ -3,9 +3,10 @@ import { currentUser } from '@clerk/nextjs'
 import{redirect} from "next/navigation"
 import { fetchUser } from '@/lib/actions/user.action';
 import ProfileHeader from '@/components/shared/ProfileHeader';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { profileTabs } from '@/constance';
 import Image from 'next/image';
+import ThreadsTab from '@/components/shared/ThreadsTab';
 type Props = {}
 
 const page = async ({params}:{params:{id:string}}) => {
@@ -41,9 +42,24 @@ const page = async ({params}:{params:{id:string}}) => {
                     className='object-contain'
                     />
                     <p className='max-sm:hidden'>{tab.label}</p>
+                    {tab.label === "Threads" && (
+                      <p className='ml-1 rounded-sm bg-light-4 px-2 py-1 !text-tiny-medium text-light-2'>
+                          {userInfo?.threads?.length}
+                      </p>
+                    )}
                   </TabsTrigger>
                 ))}
             </TabsList>
+            {profileTabs.map((tab) => (
+              <TabsContent key={`content-${tab.label}`} value={tab.value} className='w-full text-light-1 '>
+                  <ThreadsTab 
+                    currentUserId={user.id}
+                    accountId={userInfo.id}
+                    accountType="User"
+                  
+                  />
+              </TabsContent>
+            ))}
           </Tabs>
       </div>
     </div>
