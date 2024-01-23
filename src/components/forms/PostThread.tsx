@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-
 import { ThreadValidation } from "@/lib/validation/thread";
 import { createThread } from "@/lib/actions/thread.action";
 // import { updateUser } from '@/lib/actions/user.action';
@@ -28,6 +27,7 @@ interface Props {
 const PostThread = ({userId}: Props) => {
   const router = useRouter();
   const pathname = usePathname();
+  const {organization}  = useOrganization()
 
 
   const form = useForm<z.infer<typeof ThreadValidation>>({
@@ -42,7 +42,7 @@ const PostThread = ({userId}: Props) => {
     await createThread({
         text:values.thread,
         author:userId,
-        communityId:null,
+        communityId:organization ? organization.id : null,
         path:pathname
     })
   
